@@ -1,0 +1,68 @@
+
+<form action="/cart/add" method="post" enctype="multipart/form-data" id="add-to-cart-form">
+
+    <!--With this way you can ref variables inside of the snipet-->
+    <template v-for="(option, i) in form.options" :key="i">
+      <div>
+        {% render 'product-option-row' %}
+      </div>
+    </template>
+    
+    <button type="submit" class="add-to-cart-button" name="add" id="AddToCart" @click.prevent="addToCart" id="add-to-cart-button">Add to cart</button>
+</form>
+
+
+  <script>
+    if(document.querySelector('#add-to-cart-form')){
+
+
+      const productForm = Vue.createApp({
+        delimiters : ['${','}'],
+        data () {
+          return {
+            open : false,
+            variants : "",
+            selected: [],
+            form : {
+              selections : "",
+              options : ""
+            }
+          }
+        },
+        created(){
+          axios.get('/products/{{product.handle}}.js').then(res => {
+            this.form.options = res.data.options.map(item => ({...item, visible : false}))
+            this.variants = res.data.variants
+            console.log(res.data.options)
+            res.data.options.map(item => this.selected.push(item.values[0]))
+            this.form.selections = [
+              this.selected[0] ? this.selected[0] : null,
+              this.selected[1] ? this.selected[1] : null,
+              this.selected[2] ? this.selected[2] : null
+            ]
+            console.log(res)
+          }).catch(err=> console.log(err))
+        },
+        methods : {
+          addToCart(){
+            let selectedVariant 
+            let selectedVariantObj = this.variants.filter(item => {
+              if(item.option1 === this.form.selections[0] && item.option2 === this.form.selections[1] && item.option3 === this.form.selections[2]) return item
+            })
+            selectedVariant = selectedVariantObj[0].id
+            let data = {
+              id : selectedVariant,
+              quantitiy : 1
+            }
+            axios.post('/cart/add.js', data)
+            .then(res => {
+              store.getCart()
+            })
+            .then(() => toggleMiniCart.openCart())
+            .catch(err => err)
+          }
+        }
+      }).mount('#add-to-cart-form')
+    }
+
+  </script>
